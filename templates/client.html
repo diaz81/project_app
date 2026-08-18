@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Cliente · Inspección Vehicular 3D{% endblock %}
+{% block content %}
+<header class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
+  <span class="badge badge-client">Vista Cliente · Solo lectura</span>
+</header>
+<main class="viewer">
+  <div id="canvas-container" class="canvas-container"></div>
+  <p class="hint">Haz clic sobre un punto (amarillo) para ver el detalle de la medición.</p>
+</main>
+
+<div id="point-detail-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Punto de inspección</h2>
+    <dl class="detail-list">
+      <dt>Ubicación</dt><dd id="detail-location"></dd>
+      <dt>Espesor</dt><dd id="detail-thickness"></dd>
+      <dt>Observación</dt><dd id="detail-observation"></dd>
+      <dt>Coordenadas</dt><dd id="detail-coords"></dd>
+      <dt>Registrado</dt><dd id="detail-date"></dd>
+    </dl>
+    <img id="detail-photo" class="detail-photo hidden" alt="Fotografía del punto">
+    <div class="modal-actions">
+      <button type="button" id="detail-close" class="btn btn-secondary">Cerrar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/client.js') }}"></script>
+{% endblock %}

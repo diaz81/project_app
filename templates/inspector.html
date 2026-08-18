@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Inspector · Inspección Vehicular 3D{% endblock %}
+{% block content %}
+<header class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
+  <span class="badge badge-inspector">Modo Inspector</span>
+</header>
+<main class="viewer">
+  <div id="canvas-container" class="canvas-container"></div>
+  <p class="hint">Haz clic sobre la superficie del vehículo para registrar un punto de medición. Haz clic sobre un punto existente (amarillo) para ver su información.</p>
+</main>
+
+<div id="point-form-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Nuevo punto de inspección</h2>
+    <form id="point-form">
+      <label>Ubicación
+        <input type="text" name="location" id="field-location" required maxlength="200">
+      </label>
+      <label>Espesor medido (mm)
+        <input type="number" name="thickness" step="0.01" min="0" required>
+      </label>
+      <label>Observación
+        <textarea name="observation" rows="3" maxlength="1000"></textarea>
+      </label>
+      <label>Fotografía
+        <input type="file" name="photo" accept="image/png,image/jpeg,image/webp">
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="form-cancel" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar punto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="point-detail-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Punto de inspección</h2>
+    <dl class="detail-list">
+      <dt>Ubicación</dt><dd id="detail-location"></dd>
+      <dt>Espesor</dt><dd id="detail-thickness"></dd>
+      <dt>Observación</dt><dd id="detail-observation"></dd>
+      <dt>Coordenadas</dt><dd id="detail-coords"></dd>
+      <dt>Registrado</dt><dd id="detail-date"></dd>
+    </dl>
+    <img id="detail-photo" class="detail-photo hidden" alt="Fotografía del punto">
+    <div class="modal-actions">
+      <button type="button" id="detail-delete" class="btn btn-danger">Eliminar punto</button>
+      <button type="button" id="detail-close" class="btn btn-secondary">Cerrar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/inspector.js') }}"></script>
+{% endblock %}
