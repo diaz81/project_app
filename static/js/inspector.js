@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { loadVehicle, frameVehicle, suggestLocation, createSceneBundle, createMarker } from "./vehicle.js";
 import { classificationColor, classificationLabel } from "./classifications.js";
 
+const inspectionId = new URLSearchParams(window.location.search).get("inspection_id");
+
 const container = document.getElementById("canvas-container");
 const loadingEl = document.getElementById("model-loading");
 const { scene, camera, renderer, controls } = createSceneBundle(container);
@@ -33,7 +35,8 @@ const detailDeleteBtn = document.getElementById("detail-delete");
 let pendingPoint = null; // { x, y, z } waiting to be saved via the form
 
 async function loadPoints() {
-  const res = await fetch("/api/points");
+  if (!inspectionId) return;
+  const res = await fetch(`/api/points?inspection_id=${encodeURIComponent(inspectionId)}`);
   const data = await res.json();
   data.forEach(addMarkerFromData);
 }
@@ -111,12 +114,13 @@ cancelBtn.addEventListener("click", () => {
 
 formEl.addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (!pendingPoint) return;
+  if (!pendingPoint || !inspectionId) return;
 
   const fd = new FormData(formEl);
   fd.set("x", pendingPoint.x);
   fd.set("y", pendingPoint.y);
   fd.set("z", pendingPoint.z);
+  fd.set("inspection_id", inspectionId);
 
   const submitBtn = formEl.querySelector('button[type="submit"]');
   submitBtn.disabled = true;

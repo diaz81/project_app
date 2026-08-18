@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import url_for
 from flask_sqlalchemy import SQLAlchemy
@@ -17,12 +17,69 @@ CLASSIFICATION_CHOICES = {
 }
 
 
+class Vehicle(db.Model):
+    """The physical vehicle being inspected. Created fresh with each new inspection."""
+
+    __tablename__ = "vehicles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    brand = db.Column(db.String(100), nullable=False)
+    model = db.Column(db.String(100), nullable=False)
+    year = db.Column(db.Integer, nullable=True)
+    vin = db.Column(db.String(50), nullable=True)
+    mileage = db.Column(db.Float, nullable=True)
+    plate = db.Column(db.String(20), nullable=False)
+
+    inspections = db.relationship("Inspection", backref="vehicle", lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brand": self.brand,
+            "model": self.model,
+            "year": self.year,
+            "vin": self.vin,
+            "mileage": self.mileage,
+            "plate": self.plate,
+        }
+
+
+class Inspection(db.Model):
+    """One inspection session for a given vehicle. Owns a set of measurement points."""
+
+    __tablename__ = "inspections"
+
+    id = db.Column(db.Integer, primary_key=True)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicles.id"), nullable=False)
+    client = db.Column(db.String(150), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    inspector = db.Column(db.String(150), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    points = db.relationship(
+        "InspectionPoint", backref="inspection", lazy=True, cascade="all, delete-orphan"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "vehicle_id": self.vehicle_id,
+            "client": self.client,
+            "date": self.date.isoformat() if self.date else None,
+            "inspector": self.inspector,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class InspectionPoint(db.Model):
     """A single thickness-measurement point clicked on the 3D vehicle surface."""
 
     __tablename__ = "inspection_points"
 
     id = db.Column(db.Integer, primary_key=True)
+    inspection_id = db.Column(db.Integer, db.ForeignKey("inspections.id"), nullable=False)
 
     # Position on the 3D model where the inspector clicked.
     x = db.Column(db.Float, nullable=False)
@@ -40,6 +97,7 @@ class InspectionPoint(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "inspection_id": self.inspection_id,
             "x": self.x,
             "y": self.y,
             "z": self.z,

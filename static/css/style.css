@@ -23,6 +23,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
   padding: 0.9rem 1.4rem;
   border-bottom: 1px solid var(--panel-border);
   background: var(--panel);
@@ -31,6 +33,13 @@ body {
 .badge { padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
 .badge-inspector { background: rgba(79, 134, 247, 0.18); color: var(--accent-2); }
 .badge-client { background: rgba(255, 183, 3, 0.18); color: var(--accent); }
+.inspection-meta {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+.inspection-meta strong { color: var(--text); }
 
 .viewer { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .canvas-container { flex: 1; position: relative; }
@@ -122,3 +131,55 @@ body {
 .detail-list dd { margin: 0; }
 .detail-photo { width: 100%; border-radius: 8px; margin-bottom: 1rem; }
 .hidden { display: none !important; }
+
+/* Nueva inspección */
+.form-page { flex: 1; display: flex; justify-content: center; padding: 2rem 1rem; overflow-y: auto; }
+.form-card { width: 100%; max-width: 560px; }
+.form-card h1 { margin-top: 0; }
+.form-errors {
+  background: rgba(229, 72, 77, 0.12);
+  border: 1px solid var(--danger);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.8rem 1.2rem;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+}
+.stacked-form fieldset {
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem 1.2rem;
+  margin: 0 0 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.stacked-form legend { padding: 0 0.4rem; color: var(--text-dim); font-size: 0.85rem; font-weight: 600; }
+.stacked-form label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; color: var(--text-dim); }
+.stacked-form input,
+.stacked-form textarea {
+  background: #101215;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.form-actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
+
+/* Listado de inspecciones */
+.list-page { flex: 1; padding: 1.8rem 1.4rem; overflow-y: auto; }
+.list-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.list-header h1 { margin: 0; }
+.table-scroll { overflow-x: auto; }
+.inspections-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.inspections-table th,
+.inspections-table td {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+.inspections-table th { color: var(--text-dim); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.table-actions { display: flex; gap: 0.5rem; }

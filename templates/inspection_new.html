@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Nueva inspección · Inspección Vehicular 3D{% endblock %}
+{% block content %}
+<header class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
+</header>
+<main class="form-page">
+  <div class="form-card">
+    <h1>Nueva inspección</h1>
+
+    {% if errors %}
+    <ul class="form-errors">
+      {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('create_inspection') }}" class="stacked-form">
+      <fieldset>
+        <legend>Vehículo</legend>
+        <label>Marca
+          <input type="text" name="brand" required maxlength="100" value="{{ form.brand if form else '' }}">
+        </label>
+        <label>Modelo
+          <input type="text" name="model" required maxlength="100" value="{{ form.model if form else '' }}">
+        </label>
+        <label>Año
+          <input type="number" name="year" min="1900" max="2100" value="{{ form.year if form else '' }}">
+        </label>
+        <label>VIN
+          <input type="text" name="vin" maxlength="50" value="{{ form.vin if form else '' }}">
+        </label>
+        <label>Kilometraje
+          <input type="number" name="mileage" min="0" step="1" value="{{ form.mileage if form else '' }}">
+        </label>
+        <label>Patente/placa
+          <input type="text" name="plate" required maxlength="20" value="{{ form.plate if form else '' }}">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Inspección</legend>
+        <label>Cliente
+          <input type="text" name="client" required maxlength="150" value="{{ form.client if form else '' }}">
+        </label>
+        <label>Fecha
+          <input type="date" name="date" value="{{ form.date if form else '' }}">
+        </label>
+        <label>Inspector
+          <input type="text" name="inspector" required maxlength="150" value="{{ form.inspector if form else '' }}">
+        </label>
+        <label>Notas iniciales
+          <textarea name="notes" rows="3">{{ form.notes if form else '' }}</textarea>
+        </label>
+      </fieldset>
+
+      <div class="form-actions">
+        <a href="{{ url_for('list_inspections') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Iniciar inspección</button>
+      </div>
+    </form>
+  </div>
+</main>
+{% endblock %}

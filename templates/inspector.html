@@ -3,6 +3,12 @@
 {% block content %}
 <header class="topbar">
   <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
+  <div class="inspection-meta">
+    <strong>{{ vehicle.brand }} {{ vehicle.model }}</strong>{% if vehicle.year %} · {{ vehicle.year }}{% endif %}
+    · Patente {{ vehicle.plate }}
+    · Cliente: {{ inspection.client }}
+    {% if inspection.date %} · {{ inspection.date.strftime('%d/%m/%Y') }}{% endif %}
+  </div>
   <span class="badge badge-inspector">Modo Inspector</span>
 </header>
 <main class="viewer">

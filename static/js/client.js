@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { loadVehicle, frameVehicle, createSceneBundle, createMarker } from "./vehicle.js";
 import { classificationColor, classificationLabel } from "./classifications.js";
 
+const inspectionId = new URLSearchParams(window.location.search).get("inspection_id");
+
 const container = document.getElementById("canvas-container");
 const loadingEl = document.getElementById("model-loading");
 const { scene, camera, renderer, controls } = createSceneBundle(container);
@@ -22,7 +24,8 @@ const detailModal = document.getElementById("point-detail-modal");
 const detailCloseBtn = document.getElementById("detail-close");
 
 async function loadPoints() {
-  const res = await fetch("/api/points");
+  if (!inspectionId) return;
+  const res = await fetch(`/api/points?inspection_id=${encodeURIComponent(inspectionId)}`);
   const data = await res.json();
   data.forEach((pointData) => {
     pointsCache.set(pointData.id, pointData);

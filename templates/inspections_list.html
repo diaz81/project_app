@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Inspecciones · Inspección Vehicular 3D{% endblock %}
+{% block content %}
+<header class="topbar">
+  <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
+</header>
+<main class="list-page">
+  <div class="list-header">
+    <h1>Inspecciones</h1>
+    <a href="{{ url_for('new_inspection_form') }}" class="btn btn-primary">+ Nueva inspección</a>
+  </div>
+
+  {% if inspections %}
+  <div class="table-scroll">
+    <table class="inspections-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Vehículo</th>
+          <th>Patente</th>
+          <th>Cliente</th>
+          <th>Inspector</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for insp in inspections %}
+        <tr>
+          <td>{{ insp.date.strftime('%d/%m/%Y') if insp.date else '-' }}</td>
+          <td>{{ insp.vehicle.brand }} {{ insp.vehicle.model }}{% if insp.vehicle.year %} ({{ insp.vehicle.year }}){% endif %}</td>
+          <td>{{ insp.vehicle.plate }}</td>
+          <td>{{ insp.client }}</td>
+          <td>{{ insp.inspector }}</td>
+          <td class="table-actions">
+            <a href="{{ url_for('inspector', inspection_id=insp.id) }}" class="btn btn-secondary">Inspector</a>
+            <a href="{{ url_for('client', inspection_id=insp.id) }}" class="btn btn-secondary">Cliente</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hint">Todavía no hay inspecciones registradas. Crea la primera.</p>
+  {% endif %}
+</main>
+{% endblock %}

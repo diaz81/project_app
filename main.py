@@ -1,9 +1,10 @@
 import os
 import uuid
+from datetime import date, datetime
 
-from flask import Flask, abort, jsonify, render_template, request
+from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
 
-from models import CLASSIFICATION_CHOICES, InspectionPoint, db
+from models import CLASSIFICATION_CHOICES, Inspection, InspectionPoint, Vehicle, db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
@@ -42,17 +43,109 @@ def register_routes(app):
     def index():
         return render_template("index.html")
 
+    @app.route("/inspections")
+    def list_inspections():
+        inspections = Inspection.query.order_by(Inspection.created_at.desc()).all()
+        return render_template("inspections_list.html", inspections=inspections)
+
+    @app.route("/inspections/new")
+    def new_inspection_form():
+        return render_template("inspection_new.html")
+
+    @app.route("/inspections", methods=["POST"])
+    def create_inspection():
+        form = request.form
+        brand = (form.get("brand") or "").strip()
+        model = (form.get("model") or "").strip()
+        vin = (form.get("vin") or "").strip()
+        plate = (form.get("plate") or "").strip()
+        client = (form.get("client") or "").strip()
+        inspector_name = (form.get("inspector") or "").strip()
+        notes = (form.get("notes") or "").strip()
+
+        errors = []
+        if not brand:
+            errors.append("La marca es obligatoria.")
+        if not model:
+            errors.append("El modelo es obligatorio.")
+        if not plate:
+            errors.append("La patente/placa es obligatoria.")
+        if not client:
+            errors.append("El cliente es obligatorio.")
+        if not inspector_name:
+            errors.append("El inspector es obligatorio.")
+
+        year = None
+        year_raw = (form.get("year") or "").strip()
+        if year_raw:
+            try:
+                year = int(year_raw)
+            except ValueError:
+                errors.append("El año debe ser un número.")
+
+        mileage = None
+        mileage_raw = (form.get("mileage") or "").strip()
+        if mileage_raw:
+            try:
+                mileage = float(mileage_raw)
+            except ValueError:
+                errors.append("El kilometraje debe ser un número.")
+
+        insp_date = date.today()
+        date_raw = (form.get("date") or "").strip()
+        if date_raw:
+            try:
+                insp_date = datetime.strptime(date_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors.append("La fecha no es válida.")
+
+        if errors:
+            return render_template("inspection_new.html", errors=errors, form=form), 400
+
+        vehicle = Vehicle(
+            brand=brand, model=model, year=year, vin=vin or None, mileage=mileage, plate=plate
+        )
+        db.session.add(vehicle)
+        db.session.flush()  # assign vehicle.id before creating the inspection
+
+        inspection = Inspection(
+            vehicle_id=vehicle.id,
+            client=client,
+            date=insp_date,
+            inspector=inspector_name,
+            notes=notes,
+        )
+        db.session.add(inspection)
+        db.session.commit()
+
+        return redirect(url_for("inspector", inspection_id=inspection.id))
+
     @app.route("/inspector")
     def inspector():
-        return render_template("inspector.html")
+        inspection = _get_inspection_or_none(request.args.get("inspection_id", type=int))
+        if inspection is None:
+            return redirect(url_for("list_inspections"))
+        return render_template("inspector.html", inspection=inspection, vehicle=inspection.vehicle)
 
     @app.route("/client")
     def client():
-        return render_template("client.html")
+        inspection = _get_inspection_or_none(request.args.get("inspection_id", type=int))
+        if inspection is None:
+            return redirect(url_for("list_inspections"))
+        return render_template("client.html", inspection=inspection, vehicle=inspection.vehicle)
+
+    def _get_inspection_or_none(inspection_id):
+        if not inspection_id:
+            return None
+        return Inspection.query.get(inspection_id)
 
     @app.route("/api/points", methods=["GET"])
     def list_points():
-        points = InspectionPoint.query.order_by(InspectionPoint.id).all()
+        inspection_id = request.args.get("inspection_id", type=int)
+        query = InspectionPoint.query
+        if inspection_id:
+            query = query.filter_by(inspection_id=inspection_id)
+        points = query.order_by(InspectionPoint.id).all()
         return jsonify([p.to_dict() for p in points])
 
     @app.route("/api/points/<int:point_id>", methods=["GET"])
@@ -68,8 +161,12 @@ def register_routes(app):
             y = float(form["y"])
             z = float(form["z"])
             thickness = float(form["thickness"])
+            inspection_id = int(form["inspection_id"])
         except (KeyError, ValueError):
-            return jsonify({"error": "Coordenadas o espesor inválidos."}), 400
+            return jsonify({"error": "Coordenadas, espesor o inspección inválidos."}), 400
+
+        if Inspection.query.get(inspection_id) is None:
+            return jsonify({"error": "La inspección indicada no existe."}), 400
 
         location = (form.get("location") or "").strip()
         observation = (form.get("observation") or "").strip()
@@ -91,6 +188,7 @@ def register_routes(app):
             file.save(os.path.join(app.config["UPLOAD_FOLDER"], photo_filename))
 
         point = InspectionPoint(
+            inspection_id=inspection_id,
             x=x,
             y=y,
             z=z,
