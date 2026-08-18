@@ -161,11 +161,12 @@ export function createSceneBundle(container) {
   return { scene, camera, renderer, controls };
 }
 
-export function createMarker(position, id) {
+export function createMarker(position, id, colorHex = 0xffc107) {
   const geo = new THREE.SphereGeometry(0.06, 16, 16);
+  const baseColor = new THREE.Color(colorHex);
   const mat = new THREE.MeshStandardMaterial({
-    color: 0xffc107,
-    emissive: 0x553300,
+    color: baseColor,
+    emissive: baseColor.clone().multiplyScalar(0.35),
     emissiveIntensity: 0.6,
   });
   const marker = new THREE.Mesh(geo, mat);

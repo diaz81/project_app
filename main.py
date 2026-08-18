@@ -3,7 +3,7 @@ import uuid
 
 from flask import Flask, abort, jsonify, render_template, request
 
-from models import InspectionPoint, db
+from models import CLASSIFICATION_CHOICES, InspectionPoint, db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
@@ -73,10 +73,13 @@ def register_routes(app):
 
         location = (form.get("location") or "").strip()
         observation = (form.get("observation") or "").strip()
+        classification = (form.get("classification") or "").strip()
         if not location:
             return jsonify({"error": "La ubicación es obligatoria."}), 400
         if thickness < 0:
             return jsonify({"error": "El espesor no puede ser negativo."}), 400
+        if classification not in CLASSIFICATION_CHOICES:
+            return jsonify({"error": "Selecciona una clasificación válida."}), 400
 
         photo_filename = None
         file = request.files.get("photo")
@@ -94,6 +97,7 @@ def register_routes(app):
             thickness_mm=thickness,
             location=location,
             observation=observation,
+            classification=classification,
             photo_filename=photo_filename,
         )
         db.session.add(point)

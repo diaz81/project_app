@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { createVehicle, createSceneBundle, createMarker } from "./vehicle.js";
+import { classificationColor, classificationLabel } from "./classifications.js";
 
 const container = document.getElementById("canvas-container");
 const { scene, camera, renderer } = createSceneBundle(container);
@@ -24,7 +25,8 @@ async function loadPoints() {
     pointsCache.set(pointData.id, pointData);
     const marker = createMarker(
       new THREE.Vector3(pointData.x, pointData.y, pointData.z),
-      pointData.id
+      pointData.id,
+      classificationColor(pointData.classification)
     );
     markersGroup.add(marker);
   });
@@ -60,6 +62,9 @@ function handleClick(event) {
 
 function openDetailModal(point) {
   document.getElementById("detail-location").textContent = point.location;
+  document.getElementById("detail-classification").textContent = classificationLabel(
+    point.classification
+  );
   document.getElementById("detail-thickness").textContent = `${point.thickness_mm} mm`;
   document.getElementById("detail-observation").textContent =
     point.observation || "Sin observaciones";

@@ -93,7 +93,8 @@ body {
 .modal-box form { display: flex; flex-direction: column; gap: 0.9rem; }
 .modal-box label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem; color: var(--text-dim); }
 .modal-box input,
-.modal-box textarea {
+.modal-box textarea,
+.modal-box select {
   background: #101215;
   border: 1px solid var(--panel-border);
   border-radius: 6px;

@@ -5,6 +5,17 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+# Manual classification the inspector assigns to a point. Keys are the values
+# stored in SQLite and sent over the API; keep in sync with the <select>
+# options in templates/inspector.html and static/js/classifications.js.
+CLASSIFICATION_CHOICES = {
+    "registrado": "🟢 Registrado",
+    "observacion": "🟡 Observación",
+    "diferencia_significativa": "🟠 Diferencia significativa",
+    "evaluacion_adicional": "🔴 Evaluación adicional recomendada",
+    "sin_referencia": "⚪ Sin referencia",
+}
+
 
 class InspectionPoint(db.Model):
     """A single thickness-measurement point clicked on the 3D vehicle surface."""
@@ -22,6 +33,7 @@ class InspectionPoint(db.Model):
     location = db.Column(db.String(200), nullable=False)
     observation = db.Column(db.Text, nullable=True)
     photo_filename = db.Column(db.String(300), nullable=True)
+    classification = db.Column(db.String(50), nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
@@ -34,6 +46,7 @@ class InspectionPoint(db.Model):
             "thickness_mm": self.thickness_mm,
             "location": self.location,
             "observation": self.observation,
+            "classification": self.classification,
             "photo_url": (
                 url_for("static", filename=f"uploads/{self.photo_filename}")
                 if self.photo_filename

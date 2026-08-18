@@ -17,6 +17,16 @@
       <label>Ubicación
         <input type="text" name="location" id="field-location" required maxlength="200">
       </label>
+      <label>Clasificación
+        <select name="classification" id="field-classification" required>
+          <option value="" disabled selected>Selecciona una clasificación</option>
+          <option value="registrado">🟢 Registrado</option>
+          <option value="observacion">🟡 Observación</option>
+          <option value="diferencia_significativa">🟠 Diferencia significativa</option>
+          <option value="evaluacion_adicional">🔴 Evaluación adicional recomendada</option>
+          <option value="sin_referencia">⚪ Sin referencia</option>
+        </select>
+      </label>
       <label>Espesor medido (mm)
         <input type="number" name="thickness" step="0.01" min="0" required>
       </label>
@@ -39,6 +49,7 @@
     <h2>Punto de inspección</h2>
     <dl class="detail-list">
       <dt>Ubicación</dt><dd id="detail-location"></dd>
+      <dt>Clasificación</dt><dd id="detail-classification"></dd>
       <dt>Espesor</dt><dd id="detail-thickness"></dd>
       <dt>Observación</dt><dd id="detail-observation"></dd>
       <dt>Coordenadas</dt><dd id="detail-coords"></dd>
