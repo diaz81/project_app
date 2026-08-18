@@ -1,10 +1,15 @@
 # Modelo 3D del vehículo
 
-Coloca aquí el archivo del modelo con el nombre exacto:
+El modelo activo va en:
 
 ```
 static/models/car.glb
 ```
+
+> **Estado actual:** `car.glb` contiene un modelo temporal de prueba ("Car Concept" de
+> KhronosGroup/glTF-Sample-Assets, CC BY 4.0) mientras se desarrolla la app. Ver
+> [CREDITS.md](CREDITS.md) para la atribución completa. Reemplázalo por el modelo
+> definitivo cuando esté listo (actualizando o borrando CREDITS.md según corresponda).
 
 La aplicación (`static/js/vehicle.js`) intenta cargar `/static/models/car.glb`
 con `GLTFLoader` en cuanto arrancan las vistas Inspector y Cliente. Si el
