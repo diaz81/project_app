@@ -5,6 +5,16 @@
 
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+const GLB_MODEL_URL = "/static/models/car.glb";
+
+// Generic part labels that should get the click-normal refinement
+// (top/bottom/left/right/front/back) in suggestLocation(). "Chasis" is the
+// procedural car's main body; the GLTF label is used when a loaded mesh has
+// no usable name of its own.
+const GLTF_GENERIC_PART_NAME = "Carrocería del vehículo";
+const GENERIC_PART_NAMES = new Set(["Chasis", GLTF_GENERIC_PART_NAME]);
 
 export function createVehicle() {
   const group = new THREE.Group();
@@ -87,13 +97,107 @@ export function createVehicle() {
 // Suggests a human-readable location label from the clicked mesh + world normal.
 export function suggestLocation(mesh, worldNormal) {
   const part = mesh.userData.partName || "Vehículo";
-  if (part === "Chasis" && worldNormal) {
+  if (GENERIC_PART_NAMES.has(part) && worldNormal) {
     const n = worldNormal;
     if (Math.abs(n.y) > 0.7) return n.y > 0 ? "Techo del chasis" : "Parte inferior del chasis";
     if (Math.abs(n.z) > 0.6) return n.z > 0 ? "Lateral derecho" : "Lateral izquierdo";
     if (Math.abs(n.x) > 0.6) return n.x > 0 ? "Frente del vehículo" : "Parte trasera del vehículo";
   }
   return part;
+}
+
+// Turns a raw glTF mesh name into a readable label, or null if it looks like
+// an auto-generated id (e.g. "Mesh_0", "Object_12") not worth showing.
+function humanizePartName(rawName) {
+  if (!rawName) return null;
+  const trimmed = rawName.trim();
+  if (!trimmed) return null;
+  if (/^(mesh|node|object|group|geometry|scene)[\s_.-]*\d*$/i.test(trimmed)) return null;
+  return trimmed.replace(/[_\-.]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function tagGLTFParts(model) {
+  model.traverse((obj) => {
+    if (obj.isMesh) {
+      obj.userData.partName = humanizePartName(obj.name) || GLTF_GENERIC_PART_NAME;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
+    }
+  });
+}
+
+// The procedural car's own bounding-box size, used as the target size when
+// normalizing a loaded GLB so it occupies roughly the same footprint the
+// scene/camera defaults were tuned for.
+const REFERENCE_SIZE = (() => {
+  const box = new THREE.Box3().setFromObject(createVehicle());
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  return Math.max(size.x, size.y, size.z) || 4.2;
+})();
+
+// Scales `object3D` so its largest dimension matches targetSize, centers it
+// on X/Z and rests it on the ground plane (y = 0). Returns the final
+// world-space bounding box.
+function normalizeAndCenterModel(object3D, targetSize) {
+  const rawBox = new THREE.Box3().setFromObject(object3D);
+  const rawSize = new THREE.Vector3();
+  rawBox.getSize(rawSize);
+  const maxDim = Math.max(rawSize.x, rawSize.y, rawSize.z) || 1;
+  const scale = targetSize / maxDim;
+  object3D.scale.setScalar(scale);
+
+  const scaledBox = new THREE.Box3().setFromObject(object3D);
+  const center = new THREE.Vector3();
+  scaledBox.getCenter(center);
+  object3D.position.x -= center.x;
+  object3D.position.z -= center.z;
+  object3D.position.y -= scaledBox.min.y;
+
+  return new THREE.Box3().setFromObject(object3D);
+}
+
+// Loads static/models/car.glb via GLTFLoader. If the file is missing or
+// fails to parse, falls back to the procedural car so the app keeps working.
+export async function loadVehicle() {
+  const loader = new GLTFLoader();
+  try {
+    const gltf = await loader.loadAsync(GLB_MODEL_URL);
+    const model = gltf.scene || gltf.scenes[0];
+    tagGLTFParts(model);
+    const box = normalizeAndCenterModel(model, REFERENCE_SIZE);
+    return { model, box, isFallback: false };
+  } catch (err) {
+    console.warn(
+      `No se pudo cargar ${GLB_MODEL_URL}; usando el vehículo procedural de respaldo.`,
+      err
+    );
+    const model = createVehicle();
+    const box = new THREE.Box3().setFromObject(model);
+    return { model, box, isFallback: true };
+  }
+}
+
+// Points the camera and OrbitControls at `box` so the vehicle is centered
+// and fully visible, regardless of the loaded model's own scale/units.
+export function frameVehicle(camera, controls, box) {
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+  const sphere = new THREE.Sphere();
+  box.getBoundingSphere(sphere);
+  const radius = Math.max(sphere.radius, 0.5);
+
+  const distance = radius * 2.4;
+  camera.position.set(center.x + distance * 0.55, center.y + distance * 0.42, center.z + distance * 0.55);
+  camera.near = Math.max(0.01, radius / 100);
+  camera.far = Math.max(100, distance * 6);
+  camera.lookAt(center);
+  camera.updateProjectionMatrix();
+
+  controls.target.copy(center);
+  controls.minDistance = radius * 1.1;
+  controls.maxDistance = radius * 6;
+  controls.update();
 }
 
 export function createSceneBundle(container) {

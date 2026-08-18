@@ -1,15 +1,21 @@
 import * as THREE from "three";
-import { createVehicle, suggestLocation, createSceneBundle, createMarker } from "./vehicle.js";
+import { loadVehicle, frameVehicle, suggestLocation, createSceneBundle, createMarker } from "./vehicle.js";
 import { classificationColor, classificationLabel } from "./classifications.js";
 
 const container = document.getElementById("canvas-container");
-const { scene, camera, renderer } = createSceneBundle(container);
+const loadingEl = document.getElementById("model-loading");
+const { scene, camera, renderer, controls } = createSceneBundle(container);
 
-const vehicle = createVehicle();
+// Stable container added to the scene right away; its contents (the
+// procedural fallback or the loaded GLB) are swapped in once ready, so
+// nothing else has to wait on the async load.
+const vehicle = new THREE.Group();
 scene.add(vehicle);
 
 const markersGroup = new THREE.Group();
 vehicle.add(markersGroup);
+
+let vehicleModel = null; // set once loadVehicle() resolves
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -77,8 +83,9 @@ function handleClick(event) {
     return;
   }
 
-  const bodyParts = vehicle.children.filter((c) => c !== markersGroup);
-  const bodyHits = raycaster.intersectObjects(bodyParts, false);
+  if (!vehicleModel) return; // model still loading
+
+  const bodyHits = raycaster.intersectObjects([vehicleModel], true);
   if (bodyHits.length > 0) {
     const hit = bodyHits[0];
     const worldNormal = hit.face.normal
@@ -173,4 +180,16 @@ detailDeleteBtn.addEventListener("click", async () => {
   }
 });
 
+async function initVehicle() {
+  const { model, box, isFallback } = await loadVehicle();
+  vehicleModel = model;
+  vehicle.add(vehicleModel);
+  frameVehicle(camera, controls, box);
+  if (loadingEl) loadingEl.classList.add("hidden");
+  if (isFallback) {
+    console.info("Vehículo 3D: usando el modelo procedural (no se encontró static/models/car.glb).");
+  }
+}
+
+initVehicle();
 loadPoints();

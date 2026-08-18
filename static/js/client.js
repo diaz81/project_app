@@ -1,11 +1,14 @@
 import * as THREE from "three";
-import { createVehicle, createSceneBundle, createMarker } from "./vehicle.js";
+import { loadVehicle, frameVehicle, createSceneBundle, createMarker } from "./vehicle.js";
 import { classificationColor, classificationLabel } from "./classifications.js";
 
 const container = document.getElementById("canvas-container");
-const { scene, camera, renderer } = createSceneBundle(container);
+const loadingEl = document.getElementById("model-loading");
+const { scene, camera, renderer, controls } = createSceneBundle(container);
 
-const vehicle = createVehicle();
+// Stable container added to the scene right away; its contents (the
+// procedural fallback or the loaded GLB) are swapped in once ready.
+const vehicle = new THREE.Group();
 scene.add(vehicle);
 
 const markersGroup = new THREE.Group();
@@ -89,4 +92,15 @@ function openDetailModal(point) {
 
 detailCloseBtn.addEventListener("click", () => detailModal.classList.add("hidden"));
 
+async function initVehicle() {
+  const { model, box, isFallback } = await loadVehicle();
+  vehicle.add(model);
+  frameVehicle(camera, controls, box);
+  if (loadingEl) loadingEl.classList.add("hidden");
+  if (isFallback) {
+    console.info("Vehículo 3D: usando el modelo procedural (no se encontró static/models/car.glb).");
+  }
+}
+
+initVehicle();
 loadPoints();
