@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { loadVehicle, frameVehicle, createSceneBundle, createMarker } from "./vehicle.js";
-import { CLASSIFICATIONS, classificationColor, classificationLabel } from "./classifications.js";
+import { CLASSIFICATIONS, classificationColor, classificationLabelEn } from "./classifications.js";
 
 const inspectionId = new URLSearchParams(window.location.search).get("inspection_id");
 
@@ -69,16 +69,24 @@ function handleClick(event) {
 }
 
 function openDetailModal(point) {
+  // point.location and point.observation are shown exactly as entered by
+  // the inspector — never translated.
   document.getElementById("detail-location").textContent = point.location;
-  document.getElementById("detail-classification").textContent = classificationLabel(
+  document.getElementById("detail-classification").textContent = classificationLabelEn(
     point.classification
   );
   document.getElementById("detail-thickness").textContent = `${point.thickness_mm} mm`;
   document.getElementById("detail-observation").textContent =
-    point.observation || "Sin observaciones";
+    point.observation || "No observations noted";
   document.getElementById("detail-date").textContent = point.created_at
-    ? new Date(point.created_at).toLocaleString()
-    : "-";
+    ? new Date(point.created_at).toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "—";
 
   const img = document.getElementById("detail-photo");
   if (point.photo_url) {
@@ -97,11 +105,11 @@ detailCloseBtn.addEventListener("click", () => detailModal.classList.add("hidden
 // Summary counters + narrative — computed purely from the points already
 // fetched for this inspection, no extra API calls.
 const SUMMARY_TILES = [
-  { key: "registrado", label: "Sin observaciones" },
-  { key: "observacion", label: "Observación" },
-  { key: "diferencia_significativa", label: "Diferencia significativa" },
-  { key: "evaluacion_adicional", label: "Evaluación adicional recomendada" },
-  { key: "sin_referencia", label: "Sin referencia" },
+  { key: "registrado", label: "No issues found" },
+  { key: "observacion", label: "Observation" },
+  { key: "diferencia_significativa", label: "Significant difference" },
+  { key: "evaluacion_adicional", label: "Additional evaluation recommended" },
+  { key: "sin_referencia", label: "No reference" },
 ];
 
 function countByClassification(points) {
@@ -125,7 +133,7 @@ function renderSummary(points) {
   grid.innerHTML = "";
   const totalTile = document.createElement("div");
   totalTile.className = "counter-tile counter-total";
-  totalTile.innerHTML = `<span class="counter-value">${total}</span><span class="counter-label">Total de puntos</span>`;
+  totalTile.innerHTML = `<span class="counter-value">${total}</span><span class="counter-label">Total points</span>`;
   grid.appendChild(totalTile);
 
   SUMMARY_TILES.forEach(({ key, label }) => {
@@ -140,40 +148,58 @@ function renderSummary(points) {
   if (narrativeEl) narrativeEl.textContent = buildNarrative(total, counts);
 }
 
-function pluralPhrase(n, singular, plural) {
-  return `${n} ${n === 1 ? singular : plural}`;
-}
-
 function buildNarrative(total, counts) {
   if (total === 0) {
-    return "Todavía no se registraron mediciones para esta inspección.";
+    return "No measurements have been recorded for this inspection yet.";
   }
 
   const sentences = [
-    `Se registraron ${pluralPhrase(total, "medición", "mediciones")} sobre distintas zonas del vehículo.`,
+    total === 1
+      ? "1 measurement was taken across different areas of the vehicle."
+      : `${total} measurements were taken across different areas of the vehicle.`,
   ];
 
   const clauses = [];
   if (counts.registrado > 0) {
-    clauses.push(`${pluralPhrase(counts.registrado, "punto no presentó", "puntos no presentaron")} observaciones relevantes`);
+    clauses.push(
+      counts.registrado === 1
+        ? "1 point showed no relevant observations"
+        : `${counts.registrado} points showed no relevant observations`
+    );
   }
   if (counts.observacion > 0) {
-    clauses.push(`${pluralPhrase(counts.observacion, "punto quedó", "puntos quedaron")} registrado${counts.observacion === 1 ? "" : "s"} con observación`);
+    clauses.push(
+      counts.observacion === 1
+        ? "1 point was logged with an observation"
+        : `${counts.observacion} points were logged with an observation`
+    );
   }
   if (counts.diferencia_significativa > 0) {
-    clauses.push(`${pluralPhrase(counts.diferencia_significativa, "zona mostró", "zonas mostraron")} una diferencia significativa`);
+    clauses.push(
+      counts.diferencia_significativa === 1
+        ? "1 area showed a significant difference"
+        : `${counts.diferencia_significativa} areas showed a significant difference`
+    );
   }
   if (counts.evaluacion_adicional > 0) {
-    clauses.push(`${pluralPhrase(counts.evaluacion_adicional, "zona quedó marcada", "zonas quedaron marcadas")} para evaluación adicional`);
+    clauses.push(
+      counts.evaluacion_adicional === 1
+        ? "1 area was flagged for additional evaluation"
+        : `${counts.evaluacion_adicional} areas were flagged for additional evaluation`
+    );
   }
   if (counts.sin_referencia > 0) {
-    clauses.push(`${pluralPhrase(counts.sin_referencia, "punto quedó", "puntos quedaron")} sin referencia disponible`);
+    clauses.push(
+      counts.sin_referencia === 1
+        ? "1 point was left without a reference value"
+        : `${counts.sin_referencia} points were left without a reference value`
+    );
   }
 
   if (clauses.length === 1) {
     sentences.push(clauses[0].charAt(0).toUpperCase() + clauses[0].slice(1) + ".");
   } else if (clauses.length > 1) {
-    const joined = clauses.slice(0, -1).join(", ") + ", mientras que " + clauses[clauses.length - 1];
+    const joined = clauses.slice(0, -1).join(", ") + ", while " + clauses[clauses.length - 1];
     sentences.push(joined.charAt(0).toUpperCase() + joined.slice(1) + ".");
   }
 
