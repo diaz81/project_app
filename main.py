@@ -16,16 +16,32 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def resolve_database_uri():
+    """Uses PostgreSQL when DATABASE_URL is set (Railway in production),
+    otherwise falls back to the local SQLite file (local development).
+    """
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        return "sqlite:///" + os.path.join(INSTANCE_DIR, "inspections.db")
+
+    # Some providers still hand out the old "postgres://" scheme, which
+    # SQLAlchemy 1.4+ no longer accepts — normalize it.
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    return database_url
+
+
 def create_app():
     app = Flask(__name__)
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(INSTANCE_DIR, exist_ok=True)
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
-        INSTANCE_DIR, "inspections.db"
-    )
+    app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_uri()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Guards against stale/dropped connections from a managed DB (e.g. after
+    # the connection has been idle) by testing the connection before reuse.
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
     app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # 8 MB
 
