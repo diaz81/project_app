@@ -9,7 +9,10 @@
     · Cliente: {{ inspection.client }}
     {% if inspection.date %} · {{ inspection.date.strftime('%d/%m/%Y') }}{% endif %}
   </div>
-  <span class="badge badge-inspector">Modo Inspector</span>
+  <div class="topbar-actions">
+    <a href="{{ url_for('client', inspection_id=inspection.id) }}" class="btn btn-secondary" target="_blank" rel="noopener">Vista cliente</a>
+    <span class="badge badge-inspector">Modo Inspector</span>
+  </div>
 </header>
 <main class="viewer">
   <div id="canvas-container" class="canvas-container">

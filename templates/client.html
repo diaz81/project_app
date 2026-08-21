@@ -1,21 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Cliente · Inspección Vehicular 3D{% endblock %}
+{% block title %}Cliente · {{ vehicle.brand }} {{ vehicle.model }} · Inspección Vehicular 3D{% endblock %}
 {% block content %}
 <header class="topbar">
   <a href="{{ url_for('index') }}" class="brand">🚗 Inspección Vehicular 3D</a>
-  <div class="inspection-meta">
-    <strong>{{ vehicle.brand }} {{ vehicle.model }}</strong>{% if vehicle.year %} · {{ vehicle.year }}{% endif %}
-    · Patente {{ vehicle.plate }}
-    · Cliente: {{ inspection.client }}
-    {% if inspection.date %} · {{ inspection.date.strftime('%d/%m/%Y') }}{% endif %}
-  </div>
   <span class="badge badge-client">Vista Cliente · Solo lectura</span>
 </header>
-<main class="viewer">
-  <div id="canvas-container" class="canvas-container">
-    <div id="model-loading" class="model-loading">Cargando modelo 3D…</div>
-  </div>
-  <p class="hint">Haz clic sobre un punto (amarillo) para ver el detalle de la medición.</p>
+
+<main class="client-report">
+  <section class="viewer-panel">
+    <div id="canvas-container" class="canvas-container">
+      <div id="model-loading" class="model-loading">Cargando modelo 3D…</div>
+    </div>
+    <p class="hint">Gira y acerca el modelo con el mouse (o con los dedos en el celular). Toca un punto de color para ver su detalle.</p>
+  </section>
+
+  <aside class="report-sidebar">
+    <div class="card">
+      <h2>Datos del vehículo</h2>
+      <dl class="detail-list">
+        <dt>Marca</dt><dd>{{ vehicle.brand }}</dd>
+        <dt>Modelo</dt><dd>{{ vehicle.model }}</dd>
+        <dt>Año</dt><dd>{{ vehicle.year or '—' }}</dd>
+        <dt>Patente/placa</dt><dd>{{ vehicle.plate }}</dd>
+        {% if vehicle.color %}<dt>Color</dt><dd>{{ vehicle.color }}</dd>{% endif %}
+        <dt>Cliente</dt><dd>{{ inspection.client }}</dd>
+        <dt>Fecha de inspección</dt><dd>{{ inspection.date.strftime('%d/%m/%Y') if inspection.date else '—' }}</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2>Resumen de la inspección</h2>
+      <div id="summary-counters" class="counters-grid"></div>
+      <p id="narrative-summary" class="narrative">Cargando resumen…</p>
+    </div>
+  </aside>
 </main>
 
 <div id="point-detail-modal" class="modal hidden">
@@ -26,8 +44,7 @@
       <dt>Clasificación</dt><dd id="detail-classification"></dd>
       <dt>Espesor</dt><dd id="detail-thickness"></dd>
       <dt>Observación</dt><dd id="detail-observation"></dd>
-      <dt>Coordenadas</dt><dd id="detail-coords"></dd>
-      <dt>Registrado</dt><dd id="detail-date"></dd>
+      <dt>Fecha</dt><dd id="detail-date"></dd>
     </dl>
     <img id="detail-photo" class="detail-photo hidden" alt="Fotografía del punto">
     <div class="modal-actions">

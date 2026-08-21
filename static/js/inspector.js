@@ -43,17 +43,18 @@ async function loadPoints() {
 
 function addMarkerFromData(pointData) {
   pointsCache.set(pointData.id, pointData);
-  const marker = createMarker(
+  const [halo, marker] = createMarker(
     new THREE.Vector3(pointData.x, pointData.y, pointData.z),
     pointData.id,
     classificationColor(pointData.classification)
   );
+  markersGroup.add(halo);
   markersGroup.add(marker);
 }
 
 function removeMarker(id) {
-  const marker = markersGroup.children.find((m) => m.userData.pointId === id);
-  if (marker) markersGroup.remove(marker);
+  const toRemove = markersGroup.children.filter((m) => m.userData.pointId === id);
+  toRemove.forEach((m) => markersGroup.remove(m));
   pointsCache.delete(id);
 }
 

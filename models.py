@@ -29,6 +29,9 @@ class Vehicle(db.Model):
     vin = db.Column(db.String(50), nullable=True)
     mileage = db.Column(db.Float, nullable=True)
     plate = db.Column(db.String(20), nullable=False)
+    # Stored for future use (e.g. matching a scanned 3D model's paint); not
+    # applied to the rendered vehicle yet.
+    color = db.Column(db.String(50), nullable=True)
 
     inspections = db.relationship("Inspection", backref="vehicle", lazy=True)
 
@@ -41,6 +44,7 @@ class Vehicle(db.Model):
             "vin": self.vin,
             "mileage": self.mileage,
             "plate": self.plate,
+            "color": self.color,
         }
 
 

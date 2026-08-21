@@ -35,6 +35,9 @@
         <label>Patente/placa
           <input type="text" name="plate" required maxlength="20" value="{{ form.plate if form else '' }}">
         </label>
+        <label>Color del vehículo <span class="optional-tag">(opcional)</span>
+          <input type="text" name="color" maxlength="50" value="{{ form.color if form else '' }}">
+        </label>
       </fieldset>
 
       <fieldset>

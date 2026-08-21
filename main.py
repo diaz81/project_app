@@ -59,6 +59,7 @@ def register_routes(app):
         model = (form.get("model") or "").strip()
         vin = (form.get("vin") or "").strip()
         plate = (form.get("plate") or "").strip()
+        color = (form.get("color") or "").strip()
         client = (form.get("client") or "").strip()
         inspector_name = (form.get("inspector") or "").strip()
         notes = (form.get("notes") or "").strip()
@@ -103,7 +104,13 @@ def register_routes(app):
             return render_template("inspection_new.html", errors=errors, form=form), 400
 
         vehicle = Vehicle(
-            brand=brand, model=model, year=year, vin=vin or None, mileage=mileage, plate=plate
+            brand=brand,
+            model=model,
+            year=year,
+            vin=vin or None,
+            mileage=mileage,
+            plate=plate,
+            color=color or None,
         )
         db.session.add(vehicle)
         db.session.flush()  # assign vehicle.id before creating the inspection

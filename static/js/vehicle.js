@@ -265,18 +265,46 @@ export function createSceneBundle(container) {
   return { scene, camera, renderer, controls };
 }
 
+// Returns [haloMesh, markerMesh] — two siblings meant to be added directly
+// to the same flat group (e.g. markersGroup.add(halo); markersGroup.add(marker)).
+// Keeping them as flat siblings (not a parent/child Group) means existing
+// non-recursive raycasts against the group's children keep working exactly
+// as before; both meshes carry the same userData.pointId so either one
+// resolves to the same point.
+//
+// The halo is an inverted-hull outline (slightly larger sphere, back faces
+// only, bright neutral white) so the marker stays visible with clear
+// contrast regardless of the vehicle's paint color or the scene lighting.
 export function createMarker(position, id, colorHex = 0xffc107) {
-  const geo = new THREE.SphereGeometry(0.06, 16, 16);
   const baseColor = new THREE.Color(colorHex);
+
+  const haloGeo = new THREE.SphereGeometry(0.09, 20, 20);
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide,
+    toneMapped: false,
+  });
+  const halo = new THREE.Mesh(haloGeo, haloMat);
+  halo.position.copy(position);
+  halo.userData.pointId = id;
+  halo.userData.isMarker = true;
+  halo.userData.isMarkerHalo = true;
+  halo.renderOrder = 1;
+
+  const geo = new THREE.SphereGeometry(0.065, 20, 20);
   const mat = new THREE.MeshStandardMaterial({
     color: baseColor,
-    emissive: baseColor.clone().multiplyScalar(0.35),
-    emissiveIntensity: 0.6,
+    emissive: baseColor.clone().multiplyScalar(0.5),
+    emissiveIntensity: 1,
+    roughness: 0.35,
+    metalness: 0.05,
   });
   const marker = new THREE.Mesh(geo, mat);
   marker.position.copy(position);
   marker.userData.pointId = id;
   marker.userData.isMarker = true;
   marker.castShadow = true;
-  return marker;
+  marker.renderOrder = 2;
+
+  return [halo, marker];
 }

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { loadVehicle, frameVehicle, createSceneBundle, createMarker } from "./vehicle.js";
-import { classificationColor, classificationLabel } from "./classifications.js";
+import { CLASSIFICATIONS, classificationColor, classificationLabel } from "./classifications.js";
 
 const inspectionId = new URLSearchParams(window.location.search).get("inspection_id");
 
@@ -29,13 +29,15 @@ async function loadPoints() {
   const data = await res.json();
   data.forEach((pointData) => {
     pointsCache.set(pointData.id, pointData);
-    const marker = createMarker(
+    const [halo, marker] = createMarker(
       new THREE.Vector3(pointData.x, pointData.y, pointData.z),
       pointData.id,
       classificationColor(pointData.classification)
     );
+    markersGroup.add(halo);
     markersGroup.add(marker);
   });
+  renderSummary(data);
 }
 
 function updatePointer(event) {
@@ -74,9 +76,6 @@ function openDetailModal(point) {
   document.getElementById("detail-thickness").textContent = `${point.thickness_mm} mm`;
   document.getElementById("detail-observation").textContent =
     point.observation || "Sin observaciones";
-  document.getElementById(
-    "detail-coords"
-  ).textContent = `X: ${point.x.toFixed(3)}  Y: ${point.y.toFixed(3)}  Z: ${point.z.toFixed(3)}`;
   document.getElementById("detail-date").textContent = point.created_at
     ? new Date(point.created_at).toLocaleString()
     : "-";
@@ -94,6 +93,92 @@ function openDetailModal(point) {
 }
 
 detailCloseBtn.addEventListener("click", () => detailModal.classList.add("hidden"));
+
+// Summary counters + narrative — computed purely from the points already
+// fetched for this inspection, no extra API calls.
+const SUMMARY_TILES = [
+  { key: "registrado", label: "Sin observaciones" },
+  { key: "observacion", label: "Observación" },
+  { key: "diferencia_significativa", label: "Diferencia significativa" },
+  { key: "evaluacion_adicional", label: "Evaluación adicional recomendada" },
+  { key: "sin_referencia", label: "Sin referencia" },
+];
+
+function countByClassification(points) {
+  const counts = { registrado: 0, observacion: 0, diferencia_significativa: 0, evaluacion_adicional: 0, sin_referencia: 0 };
+  points.forEach((p) => {
+    if (counts[p.classification] !== undefined) counts[p.classification] += 1;
+  });
+  return counts;
+}
+
+function toCssColor(colorHex) {
+  return `#${colorHex.toString(16).padStart(6, "0")}`;
+}
+
+function renderSummary(points) {
+  const grid = document.getElementById("summary-counters");
+  if (!grid) return;
+  const counts = countByClassification(points);
+  const total = points.length;
+
+  grid.innerHTML = "";
+  const totalTile = document.createElement("div");
+  totalTile.className = "counter-tile counter-total";
+  totalTile.innerHTML = `<span class="counter-value">${total}</span><span class="counter-label">Total de puntos</span>`;
+  grid.appendChild(totalTile);
+
+  SUMMARY_TILES.forEach(({ key, label }) => {
+    const tile = document.createElement("div");
+    tile.className = "counter-tile";
+    const color = toCssColor(CLASSIFICATIONS[key].color);
+    tile.innerHTML = `<span class="counter-value" style="color:${color}">${counts[key]}</span><span class="counter-label">${label}</span>`;
+    grid.appendChild(tile);
+  });
+
+  const narrativeEl = document.getElementById("narrative-summary");
+  if (narrativeEl) narrativeEl.textContent = buildNarrative(total, counts);
+}
+
+function pluralPhrase(n, singular, plural) {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+function buildNarrative(total, counts) {
+  if (total === 0) {
+    return "Todavía no se registraron mediciones para esta inspección.";
+  }
+
+  const sentences = [
+    `Se registraron ${pluralPhrase(total, "medición", "mediciones")} sobre distintas zonas del vehículo.`,
+  ];
+
+  const clauses = [];
+  if (counts.registrado > 0) {
+    clauses.push(`${pluralPhrase(counts.registrado, "punto no presentó", "puntos no presentaron")} observaciones relevantes`);
+  }
+  if (counts.observacion > 0) {
+    clauses.push(`${pluralPhrase(counts.observacion, "punto quedó", "puntos quedaron")} registrado${counts.observacion === 1 ? "" : "s"} con observación`);
+  }
+  if (counts.diferencia_significativa > 0) {
+    clauses.push(`${pluralPhrase(counts.diferencia_significativa, "zona mostró", "zonas mostraron")} una diferencia significativa`);
+  }
+  if (counts.evaluacion_adicional > 0) {
+    clauses.push(`${pluralPhrase(counts.evaluacion_adicional, "zona quedó marcada", "zonas quedaron marcadas")} para evaluación adicional`);
+  }
+  if (counts.sin_referencia > 0) {
+    clauses.push(`${pluralPhrase(counts.sin_referencia, "punto quedó", "puntos quedaron")} sin referencia disponible`);
+  }
+
+  if (clauses.length === 1) {
+    sentences.push(clauses[0].charAt(0).toUpperCase() + clauses[0].slice(1) + ".");
+  } else if (clauses.length > 1) {
+    const joined = clauses.slice(0, -1).join(", ") + ", mientras que " + clauses[clauses.length - 1];
+    sentences.push(joined.charAt(0).toUpperCase() + joined.slice(1) + ".");
+  }
+
+  return sentences.join(" ");
+}
 
 async function initVehicle() {
   const { model, box, isFallback } = await loadVehicle();
